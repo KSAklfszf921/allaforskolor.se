@@ -1,0 +1,153 @@
+# 🇸🇪 Allaforskolor.se - Apache Configuration
+# Optimerad för Hostinger hosting
+
+# Aktivera mod_rewrite
+RewriteEngine On
+
+# Säkerhetsheaders
+<IfModule mod_headers.c>
+    # Skydda mot XSS-attacker
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Förhindra MIME-type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Skydda mot clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # Referrer policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Content Security Policy för extra säkerhet
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' unpkg.com cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' unpkg.com fonts.googleapis.com; font-src 'self' fonts.gstatic.com; img-src 'self' data: *.openstreetmap.org *.tile.openstreetmap.org"
+</IfModule>
+
+# Kompressionsinställningar för snabbare laddning
+<IfModule mod_deflate.c>
+    # Komprimera text-baserade filer
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE application/x-javascript
+    
+    # Specialhantering för JavaScript-data
+    AddOutputFilterByType DEFLATE application/x-httpd-php
+    AddOutputFilterByType DEFLATE application/x-httpd-fastphp
+</IfModule>
+
+# Cache-inställningar för bättre prestanda
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # HTML-filer - kort cache för uppdateringar
+    ExpiresByType text/html "access plus 1 hour"
+    
+    # CSS och JavaScript - längre cache
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    
+    # Bilder - mycket längre cache
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    # Fonter
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType application/font-woff "access plus 1 year"
+    
+    # Databaser och data-filer (kortare för uppdateringar)
+    ExpiresByType application/json "access plus 1 day"
+    ExpiresByType text/csv "access plus 1 day"
+    ExpiresByType application/x-sqlite3 "access plus 1 day"
+</IfModule>
+
+# HTTPS-redirect (säkerhet)
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# WWW till non-WWW redirect (välj en variant)
+RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+# Friendly URLs och fallbacks
+# Huvudsida
+RewriteRule ^karta/?$ ULTIMAT_FORSKOLE_KARTA.html [L]
+RewriteRule ^rapport/?$ KOMPLETT_FORSKOLESTATISTIK_PRESENTATION.html [L]
+
+# Felhantering - custom 404
+ErrorDocument 404 /index.html
+
+# Förhindra åtkomst till känsliga filer
+<Files "*.md">
+    Require all denied
+</Files>
+
+<Files ".git*">
+    Require all denied
+</Files>
+
+<Files "*.log">
+    Require all denied
+</Files>
+
+# Optimera för stora JavaScript-filer
+<FilesMatch "forskole_data\.js$">
+    # Extra kompression för stor data-fil
+    <IfModule mod_deflate.c>
+        SetOutputFilter DEFLATE
+    </IfModule>
+    
+    # Längre cache för data-filen
+    <IfModule mod_expires.c>
+        ExpiresActive On
+        ExpiresDefault "access plus 7 days"
+    </IfModule>
+</FilesMatch>
+
+# MIME-typer för säkerhet
+<IfModule mod_mime.c>
+    # JavaScript
+    AddType application/javascript .js
+    AddType text/javascript .js
+    
+    # JSON-data
+    AddType application/json .json
+    
+    # CSV-filer
+    AddType text/csv .csv
+    
+    # SQLite-databas
+    AddType application/x-sqlite3 .db
+    
+    # Sätt charset för textfiler
+    AddDefaultCharset utf-8
+    AddCharset utf-8 .html .css .js .json .csv
+</IfModule>
+
+# Disable server signature för säkerhet
+ServerSignature Off
+
+# Förhindra directory listing
+Options -Indexes
+
+# Aktivera FollowSymLinks för prestanda
+Options +FollowSymLinks
+
+# Specialhantering för svenska domännamnet
+# allaförskolor.se med svenska tecken
+RewriteCond %{HTTP_HOST} ^(www\.)?xn--allafrskolor-8ib\.se$ [NC]
+RewriteRule ^(.*)$ https://allaförskolor.se/$1 [R=301,L]
