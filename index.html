@@ -15,9 +15,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <style>
         * {
             margin: 0;
@@ -368,7 +365,7 @@
         <div class="spinner"></div>
         <h2>🗺️ Allaförskolor.se</h2>
         <div class="status-message" id="loadingMessage">
-            Initialiserar Supabase-anslutning och laddar alla svenska förskolor...
+            Laddar svenskt förskole-dashboard...
         </div>
     </div>
 
@@ -403,7 +400,7 @@
                     <div class="filter-group">
                         <button class="filter-btn active" data-filter="all">Alla</button>
                         <button class="filter-btn" data-filter="kommunal">Kommunal</button>
-                        <button class="filter-btn" data-filter="enskild">Enskild</button>
+                        <button class="filter-btn" data-filter="enskild">Fristående</button>
                         <button class="filter-btn" data-filter="kooperativ">Kooperativ</button>
                     </div>
                 </div>
@@ -417,7 +414,7 @@
 
             <div class="forskolor-list" id="forskolorList">
                 <div style="padding: 20px; text-align: center; color: #82895b;">
-                    Laddar förskolor från Supabase...
+                    Laddar förskoledata...
                 </div>
             </div>
         </div>
@@ -439,27 +436,6 @@
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
     <script>
-        // Supabase konfiguration
-        const SUPABASE_URL = 'https://your-project.supabase.co'
-        const SUPABASE_ANON_KEY = 'your-anon-key'
-        
-        // Fallback till lokal data om Supabase inte är konfigurerat
-        let supabaseClient = null;
-        let useSupabase = false;
-        
-        // Försök initiera Supabase
-        try {
-            if (SUPABASE_URL !== 'https://your-project.supabase.co') {
-                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                useSupabase = true;
-                console.log('🟢 Supabase initialiserad');
-            } else {
-                console.log('🟡 Använder lokal datafall');
-            }
-        } catch (error) {
-            console.log('🔴 Supabase fel, använder lokal data:', error);
-        }
-
         // Global variabler
         let map;
         let markersLayer;
@@ -483,21 +459,17 @@
         // Initiera applikationen
         async function initApp() {
             try {
-                loadingMessageEl.textContent = 'Laddar kartvy...';
+                loadingMessageEl.textContent = 'Initialiserar interaktiv karta...';
                 
                 // Initiera kartan
                 initMap();
                 
-                loadingMessageEl.textContent = 'Hämtar förskole-data...';
+                loadingMessageEl.textContent = 'Laddar förskoledata från forskole_data.js...';
                 
-                // Hämta data
-                if (useSupabase) {
-                    await loadSupabaseData();
-                } else {
-                    await loadLocalData();
-                }
+                // Ladda data med smart retry-logik
+                await loadDataWithRetry();
                 
-                loadingMessageEl.textContent = 'Renderar förskolor på kartan...';
+                loadingMessageEl.textContent = 'Renderar ' + allForskolor.length + ' förskolor på kartan...';
                 
                 // Rendera data
                 renderMarkers();
@@ -508,70 +480,85 @@
                 setupEventListeners();
                 
                 // Dölj loading och visa appen
-                loadingEl.style.display = 'none';
-                appContainerEl.style.display = 'flex';
-                
-                console.log(`🎉 Allaförskolor.se laddad! ${allForskolor.length} förskolor`);
+                setTimeout(() => {
+                    loadingEl.style.display = 'none';
+                    appContainerEl.style.display = 'flex';
+                    console.log(`🎉 Allaförskolor.se laddad! ${allForskolor.length} förskolor`);
+                }, 500);
                 
             } catch (error) {
                 console.error('❌ Fel vid initialisering:', error);
-                loadingMessageEl.textContent = 'Ett fel uppstod. Försöker ladda med lokal data...';
-                
-                // Försök med lokal data som fallback
+                loadingMessageEl.textContent = 'Fel vid laddning: ' + error.message;
+                loadingMessageEl.style.color = '#ff6b6b';
+            }
+        }
+
+        // Smart datahämtning med retry-logik
+        async function loadDataWithRetry() {
+            const attempts = [
+                () => loadFromCurrentPath(),
+                () => loadFromAbsolutePath(),
+                () => loadFromAlternativePath()
+            ];
+
+            for (let i = 0; i < attempts.length; i++) {
                 try {
-                    await loadLocalData();
-                    renderMarkers();
-                    updateStats();
-                    renderSidebar();
-                    setupEventListeners();
-                    
-                    loadingEl.style.display = 'none';
-                    appContainerEl.style.display = 'flex';
-                } catch (fallbackError) {
-                    loadingMessageEl.textContent = 'Kunde inte ladda data. Kontrollera internetanslutningen.';
+                    loadingMessageEl.textContent = `Försök ${i + 1}/3: Laddar forskole_data.js...`;
+                    await attempts[i]();
+                    if (allForskolor.length > 0) {
+                        console.log(`✅ Lyckades ladda data på försök ${i + 1}`);
+                        return;
+                    }
+                } catch (error) {
+                    console.warn(`Försök ${i + 1} misslyckades:`, error);
+                    if (i === attempts.length - 1) {
+                        throw new Error('Kunde inte ladda förskoledata från någon källa');
+                    }
                 }
             }
         }
 
-        // Ladda data från Supabase
-        async function loadSupabaseData() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('forskolor')
-                    .select('*');
-                
-                if (error) throw error;
-                
-                allForskolor = data;
-                filteredForskolor = [...allForskolor];
-                
-                console.log(`🟢 Supabase: Laddat ${allForskolor.length} förskolor`);
-            } catch (error) {
-                console.error('🔴 Supabase fel:', error);
-                throw error;
-            }
+        // Ladda från nuvarande sökväg
+        async function loadFromCurrentPath() {
+            const response = await fetch('./forskole_data.js');
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const script = await response.text();
+            evaluateDataScript(script);
         }
 
-        // Ladda lokal data som fallback
-        async function loadLocalData() {
+        // Ladda från absolut sökväg
+        async function loadFromAbsolutePath() {
+            const response = await fetch('/forskole_data.js');
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const script = await response.text();
+            evaluateDataScript(script);
+        }
+
+        // Ladda från alternativ sökväg
+        async function loadFromAlternativePath() {
+            const response = await fetch('/public_html/forskole_data.js');
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const script = await response.text();
+            evaluateDataScript(script);
+        }
+
+        // Utvärdera JavaScript-data
+        function evaluateDataScript(script) {
             try {
-                const response = await fetch('./forskole_data.js');
-                const script = await response.text();
+                // Skapa en säker sandbox för att köra scriptet
+                const scriptFunction = new Function(script + '; return typeof FORSKOLE_DATA !== "undefined" ? FORSKOLE_DATA : (typeof forskolor !== "undefined" ? forskolor : []);');
+                const data = scriptFunction();
                 
-                // Extrahera data från JavaScript-filen
-                eval(script);
-                
-                if (typeof forskolor !== 'undefined') {
-                    allForskolor = forskolor;
+                if (data && data.length > 0) {
+                    allForskolor = data;
                     filteredForskolor = [...allForskolor];
-                    console.log(`🟡 Lokal data: Laddat ${allForskolor.length} förskolor`);
+                    console.log(`🟢 Laddade ${allForskolor.length} förskolor från data`);
                 } else {
-                    throw new Error('forskolor variabel inte hittad');
+                    throw new Error('Tom eller ogiltig data');
                 }
-                
             } catch (error) {
-                console.error('🔴 Lokal data fel:', error);
-                throw error;
+                console.error('Fel vid datautvärdering:', error);
+                throw new Error('Kunde inte läsa forskoledata');
             }
         }
 
@@ -589,7 +576,9 @@
             // Marker cluster grupp
             markersLayer = L.markerClusterGroup({
                 chunkedLoading: true,
-                maxClusterRadius: 50
+                maxClusterRadius: 50,
+                showCoverageOnHover: true,
+                zoomToBoundsOnClick: true
             });
             
             map.addLayer(markersLayer);
@@ -599,8 +588,12 @@
         function renderMarkers() {
             markersLayer.clearLayers();
             
+            let validCount = 0;
+            
             filteredForskolor.forEach((forskola, index) => {
                 if (forskola.Latitude && forskola.Longitude) {
+                    validCount++;
+                    
                     const marker = L.marker([forskola.Latitude, forskola.Longitude])
                         .bindPopup(`
                             <div style="font-family: 'Fraunces', serif;">
@@ -608,6 +601,8 @@
                                 <p><strong>Kommun:</strong> ${forskola.Kommun_geo || 'Okänd'}</p>
                                 <p><strong>Typ:</strong> ${forskola.Huvudmannatyp || 'Okänd'}</p>
                                 ${forskola.adress ? `<p><strong>Adress:</strong> ${forskola.adress}</p>` : ''}
+                                ${forskola.positivaTrender ? `<p><strong>📈 Positiva trender:</strong> ${forskola.positivaTrender}</p>` : ''}
+                                ${forskola.negativaTrender ? `<p><strong>📉 Negativa trender:</strong> ${forskola.negativaTrender}</p>` : ''}
                             </div>
                         `);
                     
@@ -615,6 +610,8 @@
                     markersLayer.addLayer(marker);
                 }
             });
+            
+            console.log(`🗺️ Renderat ${validCount} markers av ${filteredForskolor.length} förskolor`);
         }
 
         // Visa detaljerad information
@@ -625,9 +622,9 @@
                     <p><strong>Kommun:</strong> ${forskola.Kommun_geo || 'Okänd'}</p>
                     <p><strong>Huvudman:</strong> ${forskola.Huvudmannatyp || 'Okänd'}</p>
                     ${forskola.adress ? `<p><strong>Adress:</strong> ${forskola.adress}</p>` : ''}
-                    ${forskola.positivaTrender ? `<p><strong>Positiva trender:</strong> ${forskola.positivaTrender}</p>` : ''}
-                    ${forskola.negativaTrender ? `<p><strong>Negativa trender:</strong> ${forskola.negativaTrender}</p>` : ''}
-                    ${forskola.totaltAntalMatt ? `<p><strong>Totalt antal mätningar:</strong> ${forskola.totaltAntalMatt}</p>` : ''}
+                    ${forskola.positivaTrender ? `<p><strong>📈 Positiva trender:</strong> ${forskola.positivaTrender}</p>` : ''}
+                    ${forskola.negativaTrender ? `<p><strong>📉 Negativa trender:</strong> ${forskola.negativaTrender}</p>` : ''}
+                    ${forskola.totaltAntalMatt ? `<p><strong>📊 Antal mätningar:</strong> ${forskola.totaltAntalMatt}</p>` : ''}
                 </div>
             `;
             
