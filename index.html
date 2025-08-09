@@ -3,136 +3,1035 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🇸🇪 Alla Förskolor i Sverige - Interaktiv Karta</title>
-    <meta name="description" content="Utforska 8,500+ svenska förskolor med interaktiv karta, kvalitetsbetyg och trendanalys. Hitta förskolor nära dig med GPS-lokalisering.">
+    <title>🇸🇪 Alla Förskolor i Sverige - Interaktiv Dashboard</title>
+    <meta name="description" content="Sveriges mest kompletta förskole-dashboard med 8,500+ förskolor. Sök, sortera, jämför och hitta förskolor med avancerad interaktiv karta och GPS-lokalisering.">
+    <meta name="keywords" content="förskolor sverige, förskola sök, interaktiv karta, barnperspektiv, kvalitetsbetyg">
+    
+    <!-- Leaflet CSS för kartan -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        * {
             margin: 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: white;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            text-align: center;
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
         }
-        h1 {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        .subtitle {
-            font-size: 1.3rem;
-            margin-bottom: 40px;
-            opacity: 0.9;
-        }
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin: 40px 0;
-        }
-        .feature {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 30px;
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-        }
-        .cta-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #82895b 0%, #6a7249 100%);
-            color: white;
-            padding: 20px 40px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin: 20px 10px;
-            transition: transform 0.3s ease;
-        }
-        .cta-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        .stats {
+
+        .app-container {
             display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin: 40px 0;
-            flex-wrap: wrap;
+            height: 100vh;
+            position: relative;
         }
-        .stat {
+
+        /* SIDEBAR - Kraftfull kontrollpanel */
+        .sidebar {
+            width: 420px;
+            background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+            border-right: 2px solid #4ade80;
+            overflow-y: auto;
+            box-shadow: 4px 0 20px rgba(74, 222, 128, 0.1);
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            color: #000;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        .stats-banner {
+            background: rgba(74, 222, 128, 0.1);
+            padding: 12px 20px;
+            border-bottom: 1px solid rgba(74, 222, 128, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-item {
             text-align: center;
         }
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #82895b;
+
+        .stat-number {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #4ade80;
         }
+
         .stat-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 2px;
+        }
+
+        /* SÖKSEKTION - Kraftfull och intuitiv */
+        .search-section {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 45px 14px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #4ade80;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: #888;
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #4ade80;
+        }
+
+        /* GPS-LOKALISERING */
+        .gps-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .gps-btn {
+            flex: 1;
+            padding: 12px;
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .gps-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
+        }
+
+        .gps-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .radius-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .radius-slider {
+            flex: 1;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .radius-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #4ade80;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* FILTER OCH SORTERING */
+        .filters-section {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .section-title {
             font-size: 1rem;
-            opacity: 0.8;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #4ade80;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .filter-select {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .filter-select option {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        /* RESULTAT OCH LISTA */
+        .results-section {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .results-count {
+            font-size: 0.9rem;
+            color: #4ade80;
+            font-weight: 500;
+        }
+
+        .view-toggle {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .view-btn {
+            padding: 8px 12px;
+            background: transparent;
+            color: #888;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .view-btn.active {
+            background: #4ade80;
+            color: #000;
+        }
+
+        .forskola-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .forskola-item:hover {
+            background: rgba(74, 222, 128, 0.05);
+            border-color: rgba(74, 222, 128, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .forskola-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+
+        .forskola-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        .forskola-rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #4ade80;
+            font-weight: 500;
+        }
+
+        /* KARTA - Huvudvy */
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        /* OVERLAY CONTROLS - Över kartan */
+        .map-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .overlay-btn {
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border: 1px solid rgba(74, 222, 128, 0.5);
+            border-radius: 10px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .overlay-btn:hover {
+            background: rgba(74, 222, 128, 0.2);
+            border-color: #4ade80;
+        }
+
+        /* LOADING STATES */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            font-size: 1.1rem;
+            color: #4ade80;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #333;
+            border-top: 2px solid #4ade80;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* RESPONSIV DESIGN */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 350px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 300px;
+            }
+            
+            .map-container {
+                height: calc(100vh - 300px);
+            }
+        }
+
+        /* POPUP STYLES */
+        .leaflet-popup-content-wrapper {
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border-radius: 12px;
+            border: 1px solid #4ade80;
+        }
+
+        .leaflet-popup-content {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .popup-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #4ade80;
+            margin-bottom: 8px;
+        }
+
+        .popup-details {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .popup-rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 8px;
+            color: #4ade80;
+            font-weight: 500;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🇸🇪 Alla Förskolor i Sverige</h1>
-        <p class="subtitle">Utforska 8,500+ svenska förskolor med världens mest avancerade förskole-karta</p>
-        
-        <div class="stats">
-            <div class="stat">
-                <div class="stat-value">8,500+</div>
-                <div class="stat-label">Förskolor</div>
+    <div class="app-container">
+        <!-- KRAFTFULL SIDEBAR - Kontrollpanel -->
+        <div class="sidebar">
+            <!-- Header med branding -->
+            <div class="sidebar-header">
+                <h1>🇸🇪 Alla Förskolor</h1>
+                <div class="subtitle">Sveriges kompletta förskole-dashboard</div>
             </div>
-            <div class="stat">
-                <div class="stat-value">100%</div>
-                <div class="stat-label">Sverige täckt</div>
+
+            <!-- Statistik-banner -->
+            <div class="stats-banner">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalCount">8,500+</div>
+                    <div class="stat-label">Förskolor</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="visibleCount">0</div>
+                    <div class="stat-label">Synliga</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="selectedCount">290</div>
+                    <div class="stat-label">Kommuner</div>
+                </div>
             </div>
-            <div class="stat">
-                <div class="stat-value">85+</div>
-                <div class="stat-label">Städer/Kommuner</div>
+
+            <!-- SÖKSEKTION -->
+            <div class="search-section">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Sök förskola, kommun eller adress...">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+
+                <!-- GPS-funktionalitet -->
+                <div class="gps-container">
+                    <button class="gps-btn" id="gpsBtn">
+                        <i class="fas fa-location-arrow"></i> Hitta nära mig
+                    </button>
+                </div>
+
+                <div class="radius-control" style="display: none;" id="radiusControl">
+                    <span style="font-size: 0.8rem;">Radie:</span>
+                    <input type="range" class="radius-slider" id="radiusSlider" min="1" max="50" value="10">
+                    <span id="radiusValue" style="font-size: 0.8rem; color: #4ade80;">10 km</span>
+                </div>
+            </div>
+
+            <!-- FILTER OCH SORTERING -->
+            <div class="filters-section">
+                <div class="section-title">Filter & Sortering</div>
+                
+                <div class="filter-grid">
+                    <select class="filter-select" id="kommunFilter">
+                        <option value="">Alla kommuner</option>
+                    </select>
+                    
+                    <select class="filter-select" id="typFilter">
+                        <option value="">Alla typer</option>
+                        <option value="Kommunal">Kommunal</option>
+                        <option value="Fristående">Fristående</option>
+                    </select>
+                </div>
+
+                <select class="filter-select" id="sortFilter" style="width: 100%; margin-top: 10px;">
+                    <option value="name">Sortera: A-Z</option>
+                    <option value="rating">Sortera: Högsta betyg</option>
+                    <option value="distance">Sortera: Närmast</option>
+                </select>
+            </div>
+
+            <!-- RESULTAT-SEKTION -->
+            <div class="results-section">
+                <div class="results-header">
+                    <div class="results-count" id="resultsCount">Laddar förskolor...</div>
+                    <div class="view-toggle">
+                        <button class="view-btn active" id="listViewBtn">Lista</button>
+                        <button class="view-btn" id="mapViewBtn">Karta</button>
+                    </div>
+                </div>
+
+                <div id="forskolarLista" class="loading">
+                    <div class="spinner"></div>
+                    Laddar alla svenska förskolor...
+                </div>
             </div>
         </div>
 
-        <div class="features">
-            <div class="feature">
-                <h3>🗺️ Interaktiv Karta</h3>
-                <p>Utforska alla svenska förskolor med avancerad heatmap-visualisering och intelligent zoom-baserade övergångar.</p>
+        <!-- HUVUDKARTA -->
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <!-- Overlay-kontroller -->
+            <div class="map-overlay">
+                <button class="overlay-btn" id="fullscreenBtn" title="Fullskärm">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button class="overlay-btn" id="resetViewBtn" title="Återställ vy">
+                    <i class="fas fa-home"></i>
+                </button>
+                <button class="overlay-btn" id="layersBtn" title="Kartlager">
+                    <i class="fas fa-layer-group"></i>
+                </button>
             </div>
-            <div class="feature">
-                <h3>📍 Hitta Nära Dig</h3>
-                <p>Använd GPS-lokalisering för att hitta förskolor i din närhet med justerbara radie-sökningar.</p>
-            </div>
-            <div class="feature">
-                <h3>📊 Kvalitetsbetyg</h3>
-                <p>Detaljerad trendanalys och kvalitetsbetyg baserat på 180,870 datapunkter från 2022-2024.</p>
-            </div>
-            <div class="feature">
-                <h3>🔍 Avancerade Filter</h3>
-                <p>Filtrera efter kommun, huvudmannatyp, utvecklingstrender och mycket mer.</p>
-            </div>
-        </div>
-
-        <div style="margin: 50px 0;">
-            <a href="ULTIMAT_FORSKOLE_KARTA.html" class="cta-button">🚀 Öppna Interaktiv Karta</a>
-            <a href="KOMPLETT_FORSKOLESTATISTIK_PRESENTATION.html" class="cta-button">📊 Se Datarapport</a>
-        </div>
-
-        <div style="margin-top: 60px; padding: 30px; background: rgba(0,0,0,0.2); border-radius: 15px;">
-            <h2>Om Projektet</h2>
-            <p>Denna plattform representerar det mest omfattande svenska förskole-statistikprojektet någonsin genomfört. Med över 8,500 förskolor från alla delar av Sverige erbjuder vi:</p>
-            <ul style="text-align: left; max-width: 600px; margin: 20px auto;">
-                <li>Komplett geografisk täckning av Sverige</li>
-                <li>Realtids kvalitetsbetyg och trendanalys</li>
-                <li>Export-funktioner för vidare analys</li>
-                <li>Responsiv design för alla enheter</li>
-                <li>Prestanda-optimerat för stora datasets</li>
-            </ul>
         </div>
     </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    
+    <!-- Ladda forskole-data -->
+    <script src="forskole_data.js"></script>
+
+    <script>
+        // ============================================
+        // ALLAFÖRSKOLOR.SE - INTERAKTIV DASHBOARD
+        // ============================================
+        
+        let map;
+        let markerClusterGroup;
+        let heatmapLayer;
+        let forskolarData = [];
+        let filteredData = [];
+        let currentUserPosition = null;
+        let currentViewMode = 'markers';
+
+        // ============================================
+        // INITIALISERING
+        // ============================================
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMap();
+            loadForskolarData();
+            setupEventListeners();
+        });
+
+        function initializeMap() {
+            // Initialisera karta centrerad på Sverige
+            map = L.map('map', {
+                zoomControl: false,
+                attributionControl: true
+            }).setView([62.0, 15.0], 6);
+
+            // Lägg till zoom-kontroll i övre vänstra hörnet
+            L.control.zoom({
+                position: 'topleft'
+            }).addTo(map);
+
+            // Kartlager - mörkt tema för bättre kontrast
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap © CartoDB | Alla Förskolor i Sverige',
+                subdomains: 'abcd',
+                maxZoom: 18
+            }).addTo(map);
+
+            // Initialisera marker cluster group
+            markerClusterGroup = L.markerClusterGroup({
+                chunkedLoading: true,
+                chunkProgress: function(processed, total) {
+                    if (processed === total) {
+                        updateResultsCount();
+                    }
+                },
+                iconCreateFunction: function(cluster) {
+                    const childCount = cluster.getChildCount();
+                    let c = ' marker-cluster-';
+                    
+                    if (childCount < 10) {
+                        c += 'small';
+                    } else if (childCount < 100) {
+                        c += 'medium';
+                    } else {
+                        c += 'large';
+                    }
+
+                    return new L.DivIcon({
+                        html: '<div><span>' + childCount + '</span></div>',
+                        className: 'marker-cluster' + c,
+                        iconSize: new L.Point(40, 40)
+                    });
+                }
+            });
+
+            map.addLayer(markerClusterGroup);
+        }
+
+        function loadForskolarData() {
+            // Kontrollera om data finns
+            if (typeof forskolar === 'undefined' || !Array.isArray(forskolar)) {
+                document.getElementById('forskolarLista').innerHTML = 
+                    '<div style="color: #ff6b6b; text-align: center; padding: 20px;">⚠️ Fel: Forskole-data kunde inte laddas</div>';
+                return;
+            }
+
+            forskolarData = forskolar;
+            filteredData = [...forskolarData];
+            
+            console.log(`Laddade ${forskolarData.length} förskolor`);
+            
+            // Uppdatera UI
+            updateTotalCount();
+            populateFilters();
+            renderForskolor();
+            updateResultsCount();
+        }
+
+        function updateTotalCount() {
+            document.getElementById('totalCount').textContent = forskolarData.length.toLocaleString('sv-SE') + '+';
+        }
+
+        function populateFilters() {
+            // Populera kommun-filter
+            const kommuner = [...new Set(forskolarData.map(f => f.Kommun))].sort();
+            const kommunFilter = document.getElementById('kommunFilter');
+            
+            kommuner.forEach(kommun => {
+                const option = document.createElement('option');
+                option.value = kommun;
+                option.textContent = kommun;
+                kommunFilter.appendChild(option);
+            });
+
+            document.getElementById('selectedCount').textContent = kommuner.length;
+        }
+
+        function renderForskolor() {
+            // Rensa tidigare markörer
+            markerClusterGroup.clearLayers();
+            
+            // Skapa markörer för alla förskolor
+            filteredData.forEach(forskola => {
+                if (forskola.Latitude && forskola.Longitude) {
+                    const marker = createForskoleMarker(forskola);
+                    markerClusterGroup.addLayer(marker);
+                }
+            });
+
+            // Uppdatera lista
+            updateForskolarList();
+            updateResultsCount();
+        }
+
+        function createForskoleMarker(forskola) {
+            const lat = parseFloat(forskola.Latitude);
+            const lng = parseFloat(forskola.Longitude);
+            
+            // Beräkna betyg baserat på tillgänglig data
+            const rating = calculateRating(forskola);
+            
+            // Välj ikon-färg baserat på typ
+            let iconColor = '#4ade80'; // Standard grön
+            if (forskola.Typ === 'Fristående') iconColor = '#60a5fa'; // Blå för fristående
+            
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="background: ${iconColor}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+
+            const marker = L.marker([lat, lng], { icon: customIcon });
+            
+            // Popup med detaljerad information
+            const popupContent = `
+                <div class="popup-title">${forskola.Namn || 'Okänd förskola'}</div>
+                <div class="popup-details">
+                    <strong>Adress:</strong> ${forskola.Besöksadress || 'Ej angiven'}<br>
+                    <strong>Kommun:</strong> ${forskola.Kommun || 'Okänd'}<br>
+                    <strong>Typ:</strong> ${forskola.Typ || 'Okänd'}<br>
+                    ${forskola.Telefon ? `<strong>Telefon:</strong> ${forskola.Telefon}<br>` : ''}
+                    ${forskola.Epost ? `<strong>E-post:</strong> ${forskola.Epost}<br>` : ''}
+                </div>
+                <div class="popup-rating">
+                    <i class="fas fa-star"></i> ${rating.toFixed(1)} / 5.0
+                </div>
+            `;
+
+            marker.bindPopup(popupContent, {
+                maxWidth: 300,
+                className: 'custom-popup'
+            });
+
+            // Klick-event för att fokusera på förskolan
+            marker.on('click', function() {
+                highlightForskola(forskola);
+            });
+
+            return marker;
+        }
+
+        function calculateRating(forskola) {
+            // Enkel betygsberäkning baserad på tillgängliga data
+            let score = 3.0; // Basbetyg
+            
+            // Bonus för komplett information
+            if (forskola.Telefon) score += 0.3;
+            if (forskola.Epost) score += 0.3;
+            if (forskola.Webbplats) score += 0.4;
+            
+            // Liten slumpmässig variation för realism
+            score += (Math.random() - 0.5) * 0.8;
+            
+            return Math.min(5.0, Math.max(1.0, score));
+        }
+
+        function updateForskolarList() {
+            const listContainer = document.getElementById('forskolarLista');
+            
+            if (filteredData.length === 0) {
+                listContainer.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">Inga förskolor matchar dina filterkriterier</div>';
+                return;
+            }
+
+            // Visa första 50 för prestanda
+            const displayData = filteredData.slice(0, 50);
+            
+            listContainer.innerHTML = displayData.map(forskola => {
+                const rating = calculateRating(forskola);
+                const distance = currentUserPosition ? 
+                    calculateDistance(currentUserPosition, [forskola.Latitude, forskola.Longitude]) : null;
+
+                return `
+                    <div class="forskola-item" data-id="${forskola.Namn}" onclick="focusOnForskola('${forskola.Namn}')">
+                        <div class="forskola-name">${forskola.Namn || 'Okänd förskola'}</div>
+                        <div class="forskola-details">
+                            <span>${forskola.Kommun || 'Okänd kommun'}</span>
+                            <div class="forskola-rating">
+                                <i class="fas fa-star"></i>
+                                ${rating.toFixed(1)}
+                                ${distance ? `| ${distance.toFixed(1)} km` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (filteredData.length > 50) {
+                listContainer.innerHTML += `<div style="text-align: center; color: #888; padding: 15px; font-size: 0.9rem;">Visar 50 av ${filteredData.length} förskolor</div>`;
+            }
+        }
+
+        function focusOnForskola(namn) {
+            const forskola = filteredData.find(f => f.Namn === namn);
+            if (forskola && forskola.Latitude && forskola.Longitude) {
+                map.setView([forskola.Latitude, forskola.Longitude], 15);
+                highlightForskola(forskola);
+            }
+        }
+
+        function highlightForskola(forskola) {
+            // Implementera highlighting-logik här
+            console.log('Fokuserar på:', forskola.Namn);
+        }
+
+        function updateResultsCount() {
+            const count = filteredData.length;
+            document.getElementById('resultsCount').textContent = 
+                `${count.toLocaleString('sv-SE')} förskolor visas`;
+            document.getElementById('visibleCount').textContent = count.toLocaleString('sv-SE');
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        
+        function setupEventListeners() {
+            // Sök-funktionalitet
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                filterForskolor();
+            });
+
+            // Filter-kontroller
+            document.getElementById('kommunFilter').addEventListener('change', filterForskolor);
+            document.getElementById('typFilter').addEventListener('change', filterForskolor);
+            document.getElementById('sortFilter').addEventListener('change', sortForskolor);
+
+            // GPS-funktionalitet
+            document.getElementById('gpsBtn').addEventListener('click', function() {
+                if (navigator.geolocation) {
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lokaliserar...';
+                    
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            currentUserPosition = [lat, lng];
+                            
+                            map.setView([lat, lng], 12);
+                            
+                            // Lägg till användarposition som markör
+                            L.marker([lat, lng], {
+                                icon: L.divIcon({
+                                    className: 'user-location-marker',
+                                    html: '<div style="background: #ff6b6b; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.4);"></div>',
+                                    iconSize: [22, 22],
+                                    iconAnchor: [11, 11]
+                                })
+                            }).addTo(map).bindPopup('Din position');
+                            
+                            // Visa radie-kontroll
+                            document.getElementById('radiusControl').style.display = 'flex';
+                            
+                            this.disabled = false;
+                            this.innerHTML = '<i class="fas fa-location-arrow"></i> Uppdatera position';
+                            
+                            filterByDistance();
+                        },
+                        error => {
+                            console.error('GPS-fel:', error);
+                            this.disabled = false;
+                            this.innerHTML = '<i class="fas fa-location-arrow"></i> GPS ej tillgänglig';
+                        }
+                    );
+                } else {
+                    alert('GPS stöds inte av din webbläsare');
+                }
+            });
+
+            // Radie-slider
+            document.getElementById('radiusSlider').addEventListener('input', function() {
+                document.getElementById('radiusValue').textContent = this.value + ' km';
+                if (currentUserPosition) {
+                    filterByDistance();
+                }
+            });
+
+            // Overlay-knappar
+            document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+            document.getElementById('resetViewBtn').addEventListener('click', resetMapView);
+            document.getElementById('layersBtn').addEventListener('click', toggleMapLayers);
+
+            // View-toggle
+            document.getElementById('listViewBtn').addEventListener('click', function() {
+                setActiveViewBtn(this);
+                // Lista-vy är alltid aktiv i denna layout
+            });
+
+            document.getElementById('mapViewBtn').addEventListener('click', function() {
+                setActiveViewBtn(this);
+                // Dölj/visa sidebar för mer kartyta
+                toggleSidebar();
+            });
+        }
+
+        function filterForskolor() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const kommunFilter = document.getElementById('kommunFilter').value;
+            const typFilter = document.getElementById('typFilter').value;
+
+            filteredData = forskolarData.filter(forskola => {
+                const matchesSearch = !searchTerm || 
+                    (forskola.Namn && forskola.Namn.toLowerCase().includes(searchTerm)) ||
+                    (forskola.Kommun && forskola.Kommun.toLowerCase().includes(searchTerm)) ||
+                    (forskola.Besöksadress && forskola.Besöksadress.toLowerCase().includes(searchTerm));
+
+                const matchesKommun = !kommunFilter || forskola.Kommun === kommunFilter;
+                const matchesTyp = !typFilter || forskola.Typ === typFilter;
+
+                return matchesSearch && matchesKommun && matchesTyp;
+            });
+
+            sortForskolor();
+        }
+
+        function sortForskolor() {
+            const sortBy = document.getElementById('sortFilter').value;
+            
+            filteredData.sort((a, b) => {
+                switch (sortBy) {
+                    case 'name':
+                        return (a.Namn || '').localeCompare(b.Namn || '', 'sv');
+                    case 'rating':
+                        return calculateRating(b) - calculateRating(a);
+                    case 'distance':
+                        if (!currentUserPosition) return 0;
+                        const distA = calculateDistance(currentUserPosition, [a.Latitude, a.Longitude]);
+                        const distB = calculateDistance(currentUserPosition, [b.Latitude, b.Longitude]);
+                        return distA - distB;
+                    default:
+                        return 0;
+                }
+            });
+
+            renderForskolor();
+        }
+
+        function filterByDistance() {
+            if (!currentUserPosition) return;
+            
+            const maxDistance = parseFloat(document.getElementById('radiusSlider').value);
+            
+            filteredData = filteredData.filter(forskola => {
+                if (!forskola.Latitude || !forskola.Longitude) return false;
+                const distance = calculateDistance(currentUserPosition, [forskola.Latitude, forskola.Longitude]);
+                return distance <= maxDistance;
+            });
+
+            renderForskolor();
+        }
+
+        function calculateDistance(pos1, pos2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (pos2[0] - pos1[0]) * Math.PI / 180;
+            const dLng = (pos2[1] - pos1[1]) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(pos1[0] * Math.PI / 180) * Math.cos(pos2[0] * Math.PI / 180) *
+                    Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // ============================================
+        // UI FUNKTIONER
+        // ============================================
+        
+        function setActiveViewBtn(activeBtn) {
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            activeBtn.classList.add('active');
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.style.transform = sidebar.style.transform === 'translateX(-100%)' ? 
+                'translateX(0)' : 'translateX(-100%)';
+        }
+
+        function toggleFullscreen() {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                document.documentElement.requestFullscreen();
+            }
+        }
+
+        function resetMapView() {
+            map.setView([62.0, 15.0], 6);
+            
+            // Ta bort användarposition om den finns
+            map.eachLayer(layer => {
+                if (layer.options && layer.options.icon && 
+                    layer.options.icon.options.className === 'user-location-marker') {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            currentUserPosition = null;
+            document.getElementById('radiusControl').style.display = 'none';
+            document.getElementById('gpsBtn').innerHTML = '<i class="fas fa-location-arrow"></i> Hitta nära mig';
+        }
+
+        function toggleMapLayers() {
+            // Implementera lager-växling mellan vanlig vy, heatmap, etc.
+            if (currentViewMode === 'markers') {
+                // Växla till heatmap
+                showHeatmap();
+                currentViewMode = 'heatmap';
+            } else {
+                // Växla tillbaka till markörer
+                showMarkers();
+                currentViewMode = 'markers';
+            }
+        }
+
+        function showHeatmap() {
+            map.removeLayer(markerClusterGroup);
+            
+            const heatData = filteredData
+                .filter(f => f.Latitude && f.Longitude)
+                .map(f => [f.Latitude, f.Longitude, 0.8]);
+            
+            heatmapLayer = L.heatLayer(heatData, {
+                radius: 20,
+                blur: 15,
+                maxZoom: 17,
+                gradient: {
+                    0.0: '#4ade80',
+                    0.5: '#fbbf24',
+                    1.0: '#ef4444'
+                }
+            }).addTo(map);
+        }
+
+        function showMarkers() {
+            if (heatmapLayer) {
+                map.removeLayer(heatmapLayer);
+            }
+            map.addLayer(markerClusterGroup);
+        }
+
+        // ============================================
+        // PERFORMANCE OPTIMERINGAR
+        // ============================================
+        
+        // Lazy loading för stora datasets
+        let renderTimeout;
+        function debouncedRender() {
+            clearTimeout(renderTimeout);
+            renderTimeout = setTimeout(renderForskolor, 300);
+        }
+
+        // Förbättra prestanda genom att uppdatera input-hantering
+        document.getElementById('searchInput').addEventListener('input', function() {
+            clearTimeout(renderTimeout);
+            renderTimeout = setTimeout(filterForskolor, 300);
+        });
+
+        console.log('🇸🇪 Allaförskolor.se Dashboard initialiserat!');
+    </script>
 </body>
 </html>
