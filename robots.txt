@@ -1,0 +1,53 @@
+# 🇸🇪 Allaforskolor.se - Robots.txt
+# SEO-optimering för sökmotorer
+
+User-agent: *
+Allow: /
+
+# Prioriterade sidor för indexering
+Allow: /index.html
+Allow: /ULTIMAT_FORSKOLE_KARTA.html
+Allow: /KOMPLETT_FORSKOLESTATISTIK_PRESENTATION.html
+
+# Blockera känsliga filer och backup-filer
+Disallow: /*.git
+Disallow: /*.md
+Disallow: /*.log
+Disallow: /backup/
+Disallow: /temp/
+Disallow: /.htaccess
+Disallow: /robots.txt
+
+# Tillåt databas-filer för SEO (men hindra direct download)
+Allow: /forskole_data.js
+Disallow: /*.csv
+Disallow: /*.db
+
+# Sitemap-plats
+Sitemap: https://allaförskolor.se/sitemap.xml
+
+# Crawl-delay för att vara snäll mot servern
+Crawl-delay: 1
+
+# Specifika inställningar för större sökmotorer
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot  
+Allow: /
+Crawl-delay: 2
+
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 3
+
+# Blockera aggressiva crawlers
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
