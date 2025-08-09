@@ -77,13 +77,13 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
-    # Tvinga HTTPS (om SSL är aktiverat)
-    RewriteCond %{HTTPS} off
-    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    # Tvinga HTTPS (INAKTIVERAT tills SSL-certifikat är konfigurerat)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
     
-    # Omdirigera www till non-www (eller vice versa - välj en)
+    # Omdirigera www till non-www (ANVÄND HTTP tills SSL fungerar)
     RewriteCond %{HTTP_HOST} ^www\.allaförskolor\.se [NC]
-    RewriteRule ^(.*)$ https://allaförskolor.se/$1 [L,R=301]
+    RewriteRule ^(.*)$ http://allaförskolor.se/$1 [L,R=301]
     
     # Alternativt: Omdirigera non-www till www
     # RewriteCond %{HTTP_HOST} ^allaförskolor\.se [NC]
